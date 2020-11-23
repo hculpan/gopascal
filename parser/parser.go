@@ -92,7 +92,7 @@ func (p *Parser) program() (*ast.Program, []string) {
 	return ast.NewProgramNode(pt, pn, block), errors
 }
 
-func (p *Parser) block() ([]*ast.Statement, []string) {
+func (p *Parser) block() (*ast.Block, []string) {
 	pt := p.scan()
 	if pt.Type == lexer.EOF {
 		return nil, []string{}
@@ -103,9 +103,13 @@ func (p *Parser) block() ([]*ast.Statement, []string) {
 		return nil, []string{err}
 	}
 
+	block := ast.NewBlock(pt)
+
+	pt = p.scan()
 	err = verifyToken(lexer.END, pt)
 	if IsNotOk(err) {
 		return nil, []string{err}
 	}
 
+	return block, []string{}
 }

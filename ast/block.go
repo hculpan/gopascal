@@ -11,3 +11,9 @@ type Block struct {
 func (b *Block) StringLiteral() string {
 	return b.BeginToken.Value
 }
+
+func NewBlock(bt lexer.Token) *Block {
+	return &Block{
+		BeginToken: bt,
+	}
+}
