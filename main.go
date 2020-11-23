@@ -15,8 +15,13 @@ limitations under the License.
 */
 package main
 
-import "github.com/hculpan/gopascal/cmd"
+import (
+	"fmt"
+
+	"github.com/hculpan/gopascal/cmd"
+)
 
 func main() {
+	fmt.Println("GoPascal v.0.0.1")
 	cmd.Execute()
 }
