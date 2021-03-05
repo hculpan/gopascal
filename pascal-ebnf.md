@@ -13,7 +13,7 @@ block =
 statement-part =
     "begin" statement-sequence "end" . 
 statement-sequence =
-    statement { ";" statement } . 
+    statement ";" { statement } . 
 statement =
     simple-statement . 
 simple-statement =

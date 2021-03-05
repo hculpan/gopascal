@@ -95,8 +95,6 @@ func (l *Lexer) createToken(lit string, position Position) Token {
 		return NewToken(BEGIN, lit, position)
 	case "end":
 		return NewToken(END, lit, position)
-	case "writeln":
-		return NewToken(BUILT_IN, lit, position)
 	default:
 		return NewToken(IDENTIFIER, lit, position)
 	}

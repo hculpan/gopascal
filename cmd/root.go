@@ -50,7 +50,7 @@ func Execute() {
 
 func usage(cmd *cobra.Command) error {
 	fmt.Println("Usage:")
-	fmt.Println("  gopascal [flage] <filename>")
+	fmt.Println("  gopascal [flags] <filename>")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -h, --help\thelp for gopascal")

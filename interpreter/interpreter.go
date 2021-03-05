@@ -27,13 +27,12 @@ func Interpreter(filename string) {
 	}()
 
 	parser := parser.NewParser(file)
-	_, errors := parser.Parse()
-	hasErrors := len(errors) > 0
-	for _, v := range errors {
+	parser.Parse()
+	for _, v := range parser.Errors {
 		fmt.Println(v)
 	}
 
-	if hasErrors {
+	if parser.HasErrors() {
 		return
 	}
 

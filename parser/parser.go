@@ -9,107 +9,144 @@ import (
 )
 
 type Parser struct {
-	lexer        *lexer.Lexer
-	buffer       lexer.Token
-	lastToken    lexer.Token
-	bufferFilled bool
+	lexer     *lexer.Lexer
+	currToken lexer.Token
+	nextToken lexer.Token
+	Errors    []string
+}
+
+func (p *Parser) advanceTokens() {
+	p.currToken = p.nextToken
+	if lexer.EOF != p.CurrentTokeType() {
+		p.nextToken = p.lexer.NextToken()
+	} else {
+		p.nextToken = p.currToken
+	}
+}
+
+func (p *Parser) HasErrors() bool {
+	return len(p.Errors) > 0
 }
 
 func NewParser(r io.Reader) *Parser {
-	return &Parser{
-		lexer:        lexer.NewLexer(r),
-		bufferFilled: false,
+	result := &Parser{
+		lexer: lexer.NewLexer(r),
 	}
-}
-
-func (p *Parser) Parse() (*ast.Program, []string) {
-	/*	_, errors := p.lexer.Lex()
-
-		if len(errors) > 0 {
-			return nil, errors
-		}
-	*/
-	return p.program()
-}
-
-func (p *Parser) scan() lexer.Token {
-	var result lexer.Token
-	if p.bufferFilled {
-		result = p.buffer
-		p.bufferFilled = false
-	} else {
-		result = p.lexer.NextToken()
-		p.lastToken = result
-	}
+	result.currToken = result.lexer.NextToken()
+	result.nextToken = result.lexer.NextToken()
 	return result
 }
 
-func (p *Parser) unscan() {
-	if !p.bufferFilled {
-		p.buffer = p.lastToken
-		p.bufferFilled = true
-	}
+func (p *Parser) Parse() *ast.Program {
+	p.Errors = []string{}
+	return p.program()
 }
 
-func verifyToken(expectedType lexer.TokenType, t lexer.Token) string {
+func (p *Parser) CurrentTokeType() lexer.TokenType {
+	return p.currToken.Type
+}
+
+func (p *Parser) NextTokeType() lexer.TokenType {
+	return p.nextToken.Type
+}
+
+func (p *Parser) addError(msg string, v ...interface{}) {
+	p.Errors = append(p.Errors, fmt.Sprintf(msg, v...))
+}
+
+func (p *Parser) swallowToken(t lexer.TokenType) bool {
+	p.advanceTokens()
+	return p.verifyToken(t, p.currToken)
+}
+
+func (p *Parser) verifyToken(expectedType lexer.TokenType, t lexer.Token) bool {
 	if expectedType != t.Type {
-		return fmt.Sprintf("Expecting '%s', found '%s' at %d:%d", expectedType, t.Type, t.Pos.Line, t.Pos.Column)
+		p.addError("Expecting '%s', found '%s' at %d:%d", expectedType, t.Type, t.Pos.Line, t.Pos.Column)
+		return false
 	}
 
-	return "Ok"
+	return true
 }
 
-func IsOk(err string) bool {
-	return err == "Ok"
+func (p *Parser) program() *ast.Program {
+	if p.CurrentTokeType() == lexer.EOF {
+		return nil
+	}
+
+	if !p.verifyToken(lexer.PROGRAM, p.currToken) {
+		return nil
+	}
+	pt := p.currToken
+
+	p.advanceTokens()
+
+	if !p.verifyToken(lexer.IDENTIFIER, p.currToken) {
+		return nil
+	}
+
+	pn := p.currToken
+
+	if !p.swallowToken(lexer.SEMI_COLON) {
+		return nil
+	}
+
+	block := p.block()
+
+	return ast.NewProgramNode(pt, pn, block)
 }
 
-func IsNotOk(err string) bool {
-	return err != "Ok"
+func (p *Parser) block() *ast.Block {
+	p.advanceTokens()
+
+	if p.CurrentTokeType() == lexer.EOF {
+		return nil
+	}
+
+	if !p.verifyToken(lexer.BEGIN, p.currToken) {
+		return nil
+	}
+
+	p.advanceTokens()
+
+	block := ast.NewBlock(p.currToken)
+
+	block.Statements = p.statementSequence()
+
+	if !p.verifyToken(lexer.END, p.currToken) {
+		return nil
+	}
+
+	return block
 }
 
-func (p *Parser) program() (*ast.Program, []string) {
-	pt := p.scan()
-	if pt.Type == lexer.EOF {
-		return nil, []string{}
+func (p *Parser) statementSequence() []*ast.ProcedureStatement {
+	result := []*ast.ProcedureStatement{}
+
+	for p.CurrentTokeType() != lexer.END {
+		result = append(result, p.statement())
 	}
 
-	err := verifyToken(lexer.PROGRAM, pt)
-	if IsNotOk(err) {
-		return nil, []string{err}
-	}
-	pn := p.scan()
-	err = verifyToken(lexer.IDENTIFIER, pn)
-	if IsNotOk(err) {
-		return nil, []string{err}
-	}
-	err = verifyToken(lexer.SEMI_COLON, p.scan())
-	if IsNotOk(err) {
-		return nil, []string{err}
-	}
-
-	block, errors := p.block()
-
-	return ast.NewProgramNode(pt, pn, block), errors
+	return result
 }
 
-func (p *Parser) block() (*ast.Block, []string) {
-	pt := p.scan()
-	if pt.Type == lexer.EOF {
-		return nil, []string{}
+func (p *Parser) statement() *ast.ProcedureStatement {
+	if !p.verifyToken(lexer.IDENTIFIER, p.currToken) {
+		return nil
 	}
 
-	err := verifyToken(lexer.BEGIN, pt)
-	if IsNotOk(err) {
-		return nil, []string{err}
+	result := ast.ProcedureStatement{
+		ProcedureName: p.currToken,
 	}
 
-	block := ast.NewBlock(pt)
-
-	pt = p.scan()
-	err = verifyToken(lexer.END, pt)
-	if IsNotOk(err) {
-		return nil, []string{err}
+	if !p.swallowToken(lexer.LEFT_PAREN) {
+		return nil
 	}
 
-	return block, []string{}
+	for {
+		if lexer.RIGHT_PAREN == p.NextTokeType() { // done reading arguments
+			break
+		}
+	}
+
+	return &result
 }

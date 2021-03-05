@@ -5,19 +5,18 @@ import "fmt"
 type TokenType string
 
 const (
-	PROGRAM     = "PROGRAM"
-	IDENTIFIER  = "IDENTIFER"
-	BUILT_IN    = "BUILT_IN"
-	SEMI_COLON  = ";"
-	BEGIN       = "BEGIN"
-	LEFT_PAREN  = "("
-	RIGHT_PAREN = ")"
-	STRING      = "STRING"
-	END         = "END"
-	PERIOD      = "."
-	INTEGER     = "INTEGER"
-	EOF         = "EOF"
-	ILLEGAL     = "ILLEGAL"
+	PROGRAM     TokenType = "PROGRAM"
+	IDENTIFIER  TokenType = "IDENTIFER"
+	SEMI_COLON  TokenType = ";"
+	BEGIN       TokenType = "BEGIN"
+	LEFT_PAREN  TokenType = "("
+	RIGHT_PAREN TokenType = ")"
+	STRING      TokenType = "STRING"
+	END         TokenType = "END"
+	PERIOD      TokenType = "."
+	INTEGER     TokenType = "INTEGER"
+	EOF         TokenType = "EOF"
+	ILLEGAL     TokenType = "ILLEGAL"
 )
 
 type Position struct {
